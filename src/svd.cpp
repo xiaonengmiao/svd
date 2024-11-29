@@ -522,15 +522,13 @@ void svd_sort(double** A, int n, int m, double* w, double** V)
     }
 }
 
-void svd_invs(double** A, int n, int m, double* w, double** V)
+void svd_invs(double** AT, double** A, int n, int m, double* w, double** V)
 {
-    double** aold = static_cast<double **>(alloc2d(n, m, sizeof(double)));
-    double** vold = static_cast<double **>(alloc2d(n, n, sizeof(double)));
+    double** vtemp = static_cast<double **>(alloc2d(n, n, sizeof(double)));
     int mnmin;
     int i, j, k;
 
-    memcpy(&aold[0][0], &A[0][0], m * n * sizeof(double));
-    memcpy(&vold[0][0], &V[0][0], n * n * sizeof(double));
+    memcpy(&vtemp[0][0], &V[0][0], n * n * sizeof(double));
 
     mnmin = (n < m) ? n : m;
 
@@ -538,7 +536,7 @@ void svd_invs(double** A, int n, int m, double* w, double** V)
     {
         for (j = 0; j < n; ++j)
         {
-            vold[j][i] = V[j][i] / w[i];
+            vtemp[j][i] = V[j][i] / w[i];
         }     
     }
 
@@ -546,10 +544,10 @@ void svd_invs(double** A, int n, int m, double* w, double** V)
     {
         for (j = 0; j < m; ++j)
         {
-            A[i][j] = 0.;
+            AT[i][j] = 0.;
             for (k = 0; k < mnmin; ++k)
             {
-                A[i][j] += vold[i][k] * aold[j][k];
+                AT[i][j] += vtemp[i][k] * A[j][k];
             }
         }     
     }
@@ -581,6 +579,7 @@ int main(int argc, char* argv[])
 {
     int m, n, mnmin, mnmax, i, j, k;
     double** A = nullptr;
+    double** AT = nullptr;
     double** V = NULL;
     double* w = NULL;
     double** W = NULL;
@@ -602,6 +601,7 @@ int main(int argc, char* argv[])
         usage();
 
     A = static_cast<double**>(alloc2d(n, m, sizeof(double)));
+    AT = static_cast<double**>(alloc2d(m, n, sizeof(double)));
 
     for (j = 0, k = 3; j < m; ++j)
         for (i = 0; i < n; ++i, ++k)
@@ -646,12 +646,12 @@ int main(int argc, char* argv[])
     printf("V =\n");
     matrix_print(n, n, V, "  ");
 
-    svd_invs(A, n, m, w, V);
+    svd_invs(AT, A, n, m, w, V);
 
     printf(" done\n");
 
     printf("A.T =\n");
-    matrix_print(m, n, A, "  ");
+    matrix_print(n, m, AT, "  ");
 
     free2d(A);
     free(w);
