@@ -522,6 +522,40 @@ void svd_sort(double** A, int n, int m, double* w, double** V)
     }
 }
 
+void svd_invs(double** A, int n, int m, double* w, double** V)
+{
+    double** aold = static_cast<double **>(alloc2d(n, m, sizeof(double)));
+    double** vold = static_cast<double **>(alloc2d(n, n, sizeof(double)));
+    int mnmin;
+    int i, j, k;
+
+    memcpy(&aold[0][0], &A[0][0], m * n * sizeof(double));
+    memcpy(&vold[0][0], &V[0][0], n * n * sizeof(double));
+
+    mnmin = (n < m) ? n : m;
+
+    for (i = 0; i < mnmin; ++i)
+    {
+        for (j = 0; j < n; ++j)
+        {
+            vold[j][i] = V[j][i] / w[i];
+        }     
+    }
+
+    for (i = 0; i < n; ++i)
+    {
+        for (j = 0; j < m; ++j)
+        {
+            A[i][j] = 0.;
+            for (k = 0; k < mnmin; ++k)
+            {
+                A[i][j] += vold[i][k] * aold[j][k];
+            }
+        }     
+    }
+
+}
+
 static void usage()
 {
     printf("Usage: svd <ncolumns> <nrows> <a_11> <a_12> ... <a_mn>\n");
@@ -612,7 +646,12 @@ int main(int argc, char* argv[])
     printf("V =\n");
     matrix_print(n, n, V, "  ");
 
-    
+    svd_invs(A, n, m, w, V);
+
+    printf(" done\n");
+
+    printf("A.T =\n");
+    matrix_print(m, n, A, "  ");
 
     free2d(A);
     free(w);
