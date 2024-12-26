@@ -51,7 +51,7 @@ static void sortvector(int n, double* v, int* pos)
     free(iv);
 }
 
-static void quit(char* format, ...)
+static void quit(const char* format, ...)
 {
     va_list args;
 
