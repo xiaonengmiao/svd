@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 #include <limits.h>
 #include <errno.h>
 
@@ -36,7 +37,7 @@ static void sortvector(int n, double* v, int* pos)
     if (n <= 0)
         return;
 
-    iv = static_cast<indexedvalue*>(malloc(n * sizeof(indexedvalue)));
+    iv = (indexedvalue*)(malloc(n * sizeof(indexedvalue)));
 
     for (i = 0; i < n; ++i) {
         iv[i].v = &v[i];
@@ -83,13 +84,12 @@ static void* alloc2d(int n1, int n2, size_t unitsize)
         quit("alloc2d(): invalid size (n1 = %d, n2 = %d)\n", n1, n2);
 
     size = n1 * n2;
-    if ((p = static_cast<char *>(calloc(size, unitsize))) == NULL)
-        // quit("alloc2d(): %s\n", strerror(errno));
-        ;
+    if ((p = (char*)(calloc(size, unitsize))) == NULL)
+        quit("alloc2d(): %s\n", strerror(errno));
 
     size = n2 * sizeof(void*);
-    if ((pp = static_cast<char **>(malloc(size))) == NULL)
-        // quit("alloc2d(): %s\n", strerror(errno));
+    if ((pp = (char**)(malloc(size))) == NULL)
+        quit("alloc2d(): %s\n", strerror(errno));
         ;
     for (i = 0; i < n2; i++)
         pp[i] = &p[i * n1 * unitsize];
@@ -128,7 +128,7 @@ void svd(double** A, int n, int m, double* w, double** V)
 
     assert(m > 0 && n > 0);
 
-    rv1 = static_cast<double*>(malloc(n * sizeof(double)));
+    rv1 = (double*)(malloc(n * sizeof(double)));
 
     /*
      * householder reduction to bidiagonal form 
@@ -457,10 +457,10 @@ void svd(double** A, int n, int m, double* w, double** V)
  */
 void svd_sort(double** A, int n, int m, double* w, double** V)
 {
-    int* pos = static_cast<int *>(malloc(n * sizeof(int)));
-    double* wold = static_cast<double *>(malloc(n * sizeof(double)));
-    double** aold = static_cast<double **>(alloc2d(n, m, sizeof(double)));
-    double** vold = static_cast<double **>(alloc2d(n, n, sizeof(double)));
+    int* pos = (int*)(malloc(n * sizeof(int)));
+    double* wold = (double*)(malloc(n * sizeof(double)));
+    double** aold = (double**)(alloc2d(n, m, sizeof(double)));
+    double** vold = (double**)(alloc2d(n, n, sizeof(double)));
     double wmax;
     int i, j;
 
@@ -469,17 +469,9 @@ void svd_sort(double** A, int n, int m, double* w, double** V)
         fflush(stderr);
     }
 
-    // memcpy(wold, w, n * sizeof(double));
-    for (int i = 0; i < n; ++i)
-        wold[i] = w[i];
-    // memcpy(&aold[0][0], &A[0][0], m * n * sizeof(double));
-    for (int i = 0; i < m; ++i)
-        for (int j = 0; j < n; ++j)
-            aold[i][j] = A[i][j];
-    // memcpy(&vold[0][0], &V[0][0], n * n * sizeof(double));
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < n; ++j)
-            vold[i][j] = V[i][j];
+    memcpy(wold, w, n * sizeof(double));
+    memcpy(&aold[0][0], &A[0][0], m * n * sizeof(double));
+    memcpy(&vold[0][0], &V[0][0], n * n * sizeof(double));
 
     sortvector(n, w, pos);
 
@@ -508,39 +500,49 @@ void svd_sort(double** A, int n, int m, double* w, double** V)
     }
 }
 
-void svd_invs(double** AT, double** A, int n, int m, double* w, double** V)
+/** Computes inverse of the matrix A using SVD.
+ *
+ * @param A Input matrix A [0..m-1][0..n-1]
+ * @param n Number of columns
+ * @param m Number of rows
+ * @param w Input vector [0..n-1] that presents diagonal matrix W 
+ * @param V Input matrix V [0..n-1][0..n-1] (not transposed)
+ * @param A_inv Output matrix A_invs [0..n-1][0..m-1]
+ */
+void svd_invs(double** A, int n, int m, double* w, double** V, double** A_inv)
 {
-    double** vtemp = static_cast<double **>(alloc2d(n, n, sizeof(double)));
+    double** vtemp = (double**)(alloc2d(n, n, sizeof(double)));
     int mnmin;
     int i, j, k;
 
-    // memcpy(&vtemp[0][0], &V[0][0], n * n * sizeof(double));
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < n; ++j)
-            vtemp[i][j] = V[i][j];
+    memcpy(&vtemp[0][0], &V[0][0], n * n * sizeof(double));
 
     mnmin = (n < m) ? n : m;
 
     for (i = 0; i < mnmin; ++i)
     {
-        for (j = 0; j < n; ++j)
+        if (w[i] != 0.0)
         {
-            vtemp[j][i] = V[j][i] / w[i];
-        }     
+            w[i] = 1.0 / w[i];
+        }
     }
 
     for (i = 0; i < n; ++i)
     {
         for (j = 0; j < m; ++j)
         {
-            AT[i][j] = 0.;
+            A_inv[i][j] = 0.0;
             for (k = 0; k < mnmin; ++k)
             {
-                AT[i][j] += vtemp[i][k] * A[j][k];
+                if (w[k] != 0.0)
+                {
+                    A_inv[i][j] += V[i][k] * w[k] * A[j][k];
+                }
             }
-        }     
+        }
     }
 
+    free2d(vtemp);
 }
 
 static void usage()
@@ -568,7 +570,7 @@ int main(int argc, char* argv[])
 {
     int m, n, mnmin, mnmax, i, j, k;
     double** A = nullptr;
-    double** AT = nullptr;
+    double** A_inv = nullptr;
     double** V = NULL;
     double* w = NULL;
     double** W = NULL;
@@ -589,8 +591,8 @@ int main(int argc, char* argv[])
     if (argc != m * n + 3)
         usage();
 
-    A = static_cast<double**>(alloc2d(n, m, sizeof(double)));
-    AT = static_cast<double**>(alloc2d(m, n, sizeof(double)));
+    A = (double**)(alloc2d(n, m, sizeof(double)));
+    A_inv = (double**)(alloc2d(m, n, sizeof(double)));
 
     for (j = 0, k = 3; j < m; ++j)
         for (i = 0; i < n; ++i, ++k)
@@ -599,9 +601,9 @@ int main(int argc, char* argv[])
     printf("A = \n");
     matrix_print(n, m, A, "  ");
 
-    V = static_cast<double**>(alloc2d(n, n, sizeof(double)));
-    w = static_cast<double*>(malloc(mnmax * sizeof(double)));
-    W = static_cast<double**>(alloc2d(n, mnmax, sizeof(double)));
+    V = (double**)(alloc2d(n, n, sizeof(double)));
+    w = (double*)(malloc(mnmax * sizeof(double)));
+    W = (double**)(alloc2d(n, mnmax, sizeof(double)));
 
     printf("performing SVD:");
 
@@ -635,17 +637,20 @@ int main(int argc, char* argv[])
     printf("V =\n");
     matrix_print(n, n, V, "  ");
 
-    svd_invs(AT, A, n, m, w, V);
+    printf("performing inverse:");
+
+    svd_invs(A, n, m, w, V, A_inv);
 
     printf(" done\n");
 
     printf("A.T =\n");
-    matrix_print(n, m, AT, "  ");
+    matrix_print(n, m, A_inv, "  ");
 
     free2d(A);
     free(w);
     free2d(V);
     free2d(W);
+    free2d(A_inv);
 
     return 0;
 }
