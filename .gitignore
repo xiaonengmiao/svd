@@ -1,0 +1,16 @@
+.vscode/
+# Ignore C++ build files
+*.o
+*.obj
+*.exe
+*.out
+*.class
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.swp
+*.ipynb
+**.DS_Store
+build/

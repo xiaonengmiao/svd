@@ -1,0 +1,31 @@
+#
+#  svd
+# ===============================================
+#
+# CMake build script
+
+cmake_minimum_required(VERSION 3.10)
+project(svd)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+        "Choose the type of build, options are: Debug Release."
+        FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
+endif()
+
+# Add sources
+file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/*.cpp")
+
+# Specify include directory
+include_directories("${PROJECT_SOURCE_DIR}/include/" ${EIGEN3_INCLUDE_DIRS})
+
+# Compile and generate the executable
+add_executable(svd src/svd.cpp)
+
+set_property(TARGET svd PROPERTY CXX_STANDARD 14)
+set_property(TARGET svd PROPERTY CXX_STANDARD_REQUIRED ON)
