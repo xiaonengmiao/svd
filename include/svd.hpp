@@ -32,13 +32,13 @@ void svd_sort(double** A, int n, int m, double* w, double** V);
 
 /** Performs inversion of a matrix using SVD.
  *
- * @param AT Input matrix A [0..m-1][0..n-1]; output matrix AT
  * @param A Input matrix A [0..m-1][0..n-1]
  * @param n Number of columns
  * @param m Number of rows
  * @param w Input-ouput vector [0..n-1] that presents diagonal matrix W 
  * @param V Input-output matrix V [0..n-1][0..n-1] (not transposed)
+ * @param A_inv Input matrix A [0..m-1][0..n-1]; output matrix AT
  */
-void svd_invs(double** AT, double** A, int n, int m, double* w, double** V);
+void svd_invs(double** A, int n, int m, double* w, double** V, double** A_inv);
 
 #endif

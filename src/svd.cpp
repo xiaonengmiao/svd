@@ -554,7 +554,7 @@ static void usage()
     exit(0);
 }
 
-static void matrix_print(int n, int m, double** A, char* offset)
+static void matrix_print(int n, int m, double** A, const char* offset)
 {
     int i, j;
 
